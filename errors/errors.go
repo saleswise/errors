@@ -27,8 +27,20 @@ type DropboxError interface {
 	// another error.
 	GetInner() error
 
+	// This checks all transitive inners for the specified error.
+	HasInner(e error) bool
+
 	// Implements the built-in error interface.
 	Error() string
+
+	// This sets the state of the error, as decided by the creator.
+	SetState(state map[string]interface{}) DropboxError
+
+	// This returns the state of the error.
+	GetState() map[string]interface{}
+
+	// This returns the state of the error and all inner errors.
+	GetAnnotatedStates() []map[string]interface{}
 }
 
 // Standard struct for general types of errors.
@@ -39,6 +51,7 @@ type DropboxBaseError struct {
 	Msg     string
 	Stack   string
 	Context string
+	State   map[string]interface{}
 	inner   error
 }
 
@@ -93,6 +106,67 @@ func (e *DropboxBaseError) GetContext() string {
 // This returns the wrapped error, if there is one.
 func (e *DropboxBaseError) GetInner() error {
 	return e.inner
+}
+
+func (e *DropboxBaseError) SetState(s map[string]interface{}) DropboxError {
+	e.State = s
+	return e
+}
+
+func (e *DropboxBaseError) GetState() map[string]interface{} {
+	return e.State
+}
+
+func (e *DropboxBaseError) GetAnnotatedStates() (out []map[string]interface{}) {
+	for _, err := range e.inners() {
+		var s map[string]interface{}
+		if dbe, ok := err.(DropboxError); ok {
+			s = dbe.GetState()
+			stack := dbe.GetStack()
+			if end := IndexNth(stack, "\n", 3); end != -1 {
+				stack = stack[:end]
+			}
+			if beg := strings.LastIndex(stack, "\n"); beg != -1 {
+				stack = stack[beg:]
+			}
+			stack = strings.TrimSpace(stack)
+			s["_location"] = stack
+			s["_message"] = dbe.GetMessage()
+		} else {
+			s = map[string]interface{}{
+				"_message": err.Error(),
+			}
+		}
+
+		out = append(out, s)
+	}
+
+	return
+}
+
+func (e *DropboxBaseError) HasInner(target error) (match bool) {
+	for _, err := range e.inners() {
+		if err == target {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (e *DropboxBaseError) inners() (out []error) {
+	var err error = e
+	for {
+		if err != nil {
+			out = append(out, err)
+		}
+
+		if dbe, ok := err.(DropboxError); ok {
+			err = dbe.GetInner()
+		} else {
+			return
+		}
+	}
 }
 
 // This returns a new DropboxBaseError initialized with the given message and
