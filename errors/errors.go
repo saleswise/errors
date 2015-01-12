@@ -122,6 +122,9 @@ func (e *DropboxBaseError) GetAnnotatedStates() (out []map[string]interface{}) {
 		var s map[string]interface{}
 		if dbe, ok := err.(DropboxError); ok {
 			s = dbe.GetState()
+			if s == nil {
+				s = make(map[string]interface{})
+			}
 			stack := dbe.GetStack()
 			if end := IndexNth(stack, "\n", 3); end != -1 {
 				stack = stack[:end]
