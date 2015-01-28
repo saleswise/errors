@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
+	"encoding/json"
 )
 
 // This interface exposes additional information about the error.
@@ -238,7 +239,11 @@ func fillErrorInfo(err error, errLines *[]string, origStack *string) {
 
 	derr, ok := err.(DropboxError)
 	if ok {
-		*errLines = append(*errLines, derr.GetMessage())
+		state, err := json.Marshal(derr.GetState())
+		if err != nil {
+			state = []byte(err.Error())
+		}
+		*errLines = append(*errLines, derr.GetMessage(), string(state))
 		*origStack = derr.GetStack()
 		fillErrorInfo(derr.GetInner(), errLines, origStack)
 	} else {
