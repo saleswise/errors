@@ -319,3 +319,17 @@ func stackTrace(skip int) (current, context string) {
 func StackTrace() (current, context string) {
 	return stackTrace(3)
 }
+
+func ContainsError(haystack error, needles ...error) bool {
+	for _, needle := range needles {
+		if haystack == needle {
+			return true
+		}
+	}
+
+	if dbe, ok := haystack.(DropboxError); ok {
+		return ContainsError(dbe.GetInner(), needles...)
+	}
+
+	return false
+}
