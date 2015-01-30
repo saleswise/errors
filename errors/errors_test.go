@@ -52,6 +52,29 @@ func TestWrappedError(t *testing.T) {
 	}
 }
 
+func TestContainsError(t *testing.T) {
+	const (
+		innerMsg  = "I am inner error"
+		middleMsg = "I am the middle error"
+		outerMsg  = "I am the mighty outer error"
+	)
+	inner := fmt.Errorf(innerMsg)
+	middle := Wrap(inner, middleMsg)
+	outer := Wrap(middle, outerMsg)
+
+	if !ContainsError(outer, inner) {
+		t.Error("couldn't confirm that outer contains inner")
+	}
+
+	if !ContainsError(outer, middle) {
+		t.Error("couldn't confirm that outer contains middle")
+	}
+
+	if !ContainsError(outer, middle, inner) {
+		t.Error("couldn't confirm that outer contains middle or inner")
+	}
+}
+
 // ---------------------------------------
 // minimal example + test for custom error
 //
@@ -75,10 +98,13 @@ func (e databaseError) Error() string {
 }
 
 // for the DropboxError interface
-func (e databaseError) GetMessage() string { return e.Msg }
-func (e databaseError) GetStack() string   { return e.Stack }
-func (e databaseError) GetContext() string { return e.Context }
-func (e databaseError) GetInner() error    { return nil }
+func (e databaseError) GetMessage() string                                 { return e.Msg }
+func (e databaseError) GetStack() string                                   { return e.Stack }
+func (e databaseError) GetContext() string                                 { return e.Context }
+func (e databaseError) GetInner() error                                    { return nil }
+func (e databaseError) GetAnnotatedStates() []map[string]interface{}       { return nil }
+func (e databaseError) GetState() map[string]interface{}                   { return nil }
+func (e databaseError) SetState(state map[string]interface{}) DropboxError { return nil }
 
 // ---------------------------------------
 

@@ -28,9 +28,6 @@ type DropboxError interface {
 	// another error.
 	GetInner() error
 
-	// This checks all transitive inners for the specified error.
-	HasInner(e error) bool
-
 	// Implements the built-in error interface.
 	Error() string
 
@@ -146,16 +143,6 @@ func (e *DropboxBaseError) GetAnnotatedStates() (out []map[string]interface{}) {
 	}
 
 	return
-}
-
-func (e *DropboxBaseError) HasInner(target error) (match bool) {
-	for _, err := range e.inners() {
-		if err == target {
-			return true
-		}
-	}
-
-	return false
 }
 
 func (e *DropboxBaseError) inners() (out []error) {
