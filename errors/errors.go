@@ -46,11 +46,12 @@ type DropboxError interface {
 // For an example of custom error type, look at databaseError/newDatabaseError
 // in errors_test.go.
 type DropboxBaseError struct {
-	Msg     string
-	Stack   string
-	Context string
-	State   map[string]interface{}
-	inner   error
+	Msg      string
+	Stack    string
+	Context  string
+	State    map[string]interface{}
+	Constant bool
+	inner    error
 }
 
 // This returns the error string without stack trace information.
@@ -171,6 +172,14 @@ func New(msg string) DropboxError {
 	}
 }
 
+// NewConstant returns an error that is to be used as a constant instead of necessarily having valid
+// stack information itself (e.g. used for NotFound-type errors that are created as constants.)
+func NewConstant(msg string) DropboxError {
+	e := New(msg)
+	e.(*DropboxBaseError).Constant = true
+	return e
+}
+
 // Same as New, but with fmt.Printf-style parameters.
 func Newf(format string, args ...interface{}) DropboxError {
 	stack, context := StackTrace()
@@ -212,7 +221,7 @@ func DefaultError(e DropboxError) string {
 	errLines[0] = "ERROR:"
 	fillErrorInfo(e, &errLines, &origStack)
 	errLines = append(errLines, "")
-	errLines = append(errLines, "ORIGINAL STACK TRACE:")
+	errLines = append(errLines, "MEANINGFUL STACK TRACE:")
 	errLines = append(errLines, origStack)
 	return strings.Join(errLines, "\n")
 }
@@ -231,7 +240,9 @@ func fillErrorInfo(err error, errLines *[]string, origStack *string) {
 			state = []byte(err.Error())
 		}
 		*errLines = append(*errLines, derr.GetMessage(), string(state))
-		*origStack = derr.GetStack()
+		if dberr, ok := derr.(*DropboxBaseError); !ok || !dberr.Constant || origStack == nil {
+			*origStack = derr.GetStack()
+		}
 		fillErrorInfo(derr.GetInner(), errLines, origStack)
 	} else {
 		*errLines = append(*errLines, err.Error())
