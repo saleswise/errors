@@ -318,7 +318,15 @@ func StackTrace() (current, context string) {
 	return stackTrace(3)
 }
 
-func ContainsError(haystack error, needles ...error) bool {
+// ContainsError checks whether the given haystack or any inner errors
+// contain any of the needles.
+// Passing nil for haystack returns false as a convenience.
+func ContainsError(haystack error, firstNeedle error, otherNeedles ...error) bool {
+	if haystack == nil {
+		return false
+	}
+
+	needles := append([]error{firstNeedle}, otherNeedles...)
 	for _, needle := range needles {
 		if haystack == needle {
 			return true
@@ -331,3 +339,4 @@ func ContainsError(haystack error, needles ...error) bool {
 
 	return false
 }
+
