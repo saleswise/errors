@@ -334,7 +334,7 @@ func ContainsError(haystack error, firstNeedle error, otherNeedles ...error) boo
 	}
 
 	if dbe, ok := haystack.(DropboxError); ok {
-		return ContainsError(dbe.GetInner(), needles...)
+		return ContainsError(dbe.GetInner(), firstNeedle, otherNeedles...)
 	}
 
 	return false
