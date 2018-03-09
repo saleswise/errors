@@ -125,10 +125,10 @@ func (e *DropboxBaseError) GetAnnotatedStates() (out []map[string]interface{}) {
 				s = make(map[string]interface{})
 			}
 			stack := dbe.GetStack()
-			if end := IndexNth(stack, "\n", 3); end != -1 {
+			if end := IndexNth(stack, "\n", 3); end >= 0 {
 				stack = stack[:end]
 			}
-			if beg := strings.LastIndex(stack, "\n"); beg != -1 {
+			if beg := strings.LastIndex(stack, "\n"); beg >= 0 {
 				stack = stack[beg:]
 			}
 			stack = strings.TrimSpace(stack)
